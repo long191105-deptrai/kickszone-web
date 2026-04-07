@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext'; 
+import { toast } from 'react-toastify'; // Thêm dòng này vào bác nhé
 
 // Import logo
 import logoKicksZone from '../assets/images/logo.png'; 
