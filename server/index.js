@@ -12,7 +12,6 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- 2. KẾT NỐI DATABASE ---
-// Dùng MongoDB Atlas nên Hosting không bao giờ sợ mất dữ liệu bác nhé!
 const mongoURI = 'mongodb+srv://nguyenlong19112005_db_user:6Bwn3KCKDSFVGyPY@cluster0.ppqxaze.mongodb.net/shoesdb?retryWrites=true&w=majority';
 
 mongoose.connect(mongoURI)
@@ -20,20 +19,16 @@ mongoose.connect(mongoURI)
   .catch(err => console.log('❌ Lỗi kết nối DB:', err));
 
 // --- 3. KHAI BÁO ROUTES API ---
-// Route xác thực (Đăng ký/Đăng nhập)
 app.use('/api/auth', require('./routes/auth'));
-
-// Route sản phẩm
 app.use('/api/products', require('./routes/product'));
-
-// Route đơn hàng
 app.use('/api/orders', require('./routes/order'));
-
-// Route khách hàng
 app.use('/api/users', require('./routes/user'));
 
-// Xử lý lỗi 404 DÀNH RIÊNG CHO API
-app.use('/api/*', (req, res) => {
+// --- FIX LỖI TẠI ĐÂY ---
+// Thay vì dùng '/api/*', ta dùng regex hoặc viết đơn giản để tránh lỗi PathError trên Render
+app.use('/api', (req, res, next) => {
+  // Nếu request vào /api mà không khớp các route trên thì báo 404 API
+  if (req.url === '/') return next(); // Cho phép đi tiếp nếu là root api (nếu có)
   res.status(404).json({ message: "Không tìm thấy đường dẫn API này!" });
 });
 
@@ -42,19 +37,17 @@ app.use('/api/*', (req, res) => {
 // --- 4. CẤU HÌNH HOSTING (TÍCH HỢP FRONTEND VÀO BACKEND) ---
 // ====================================================================
 
-// Bác đang dùng 1 thư mục 'client' chung cho cả web, nên ta trỏ thẳng vào 'client/build'
+// Trỏ thẳng vào thư mục 'build' của client
 app.use(express.static(path.resolve(__dirname, '../client/build')));
 
-// Bắt mọi đường dẫn còn lại (Dấu *) và giao cho React Router tự xử lý 
-// (Bao gồm cả '/admin', '/', '/product'...)
+// Bắt mọi đường dẫn còn lại giao cho React Router
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
 });
 
 
 // --- 5. KHỞI CHẠY SERVER ---
-// Dùng process.env.PORT để Server tự lấy cổng động khi đưa lên Hosting (Render, Heroku...)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port: ${PORT}`);
+  console.log(`🚀 Server đang chạy tại cổng: ${PORT}`);
 });
