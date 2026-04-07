@@ -1,26 +1,29 @@
-// client/src/pages/public/MyOrders.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Lấy user từ localStorage
   const savedUser = localStorage.getItem('user');
   const user = savedUser ? JSON.parse(savedUser) : null;
 
   useEffect(() => {
     const fetchMyOrders = async () => {
-      // Chấp nhận cả _id và id để khớp với dữ liệu từ Backend
       const currentUserId = user?._id || user?.id;
 
       try {
         if (currentUserId) {
-          const res = await axios.get(`http://localhost:3000/api/orders/mine/${currentUserId}`);
+          // Đã thay localhost bằng ${API_URL}
+          const res = await axios.get(`${API_URL}/api/orders/mine/${currentUserId}`);
           setOrders(res.data);
         } else {
           console.warn("Không tìm thấy ID người dùng để lấy đơn hàng");
@@ -33,7 +36,6 @@ const MyOrders = () => {
     };
     
     fetchMyOrders();
-    // FIX LỖI SYNTAX: Đã thêm dấu chấm vào user?.id và bọc đúng mảng dependency
   }, [user?._id, user?.id]); 
 
   const getStatusColor = (status) => {
@@ -48,28 +50,30 @@ const MyOrders = () => {
   const getDisplayImg = (item) => {
     const imgs = item.images || item.image;
     const path = Array.isArray(imgs) ? imgs[0] : imgs;
-    if (path?.startsWith('http')) return path;
-    return path ? `http://localhost:3000${path}` : 'https://via.placeholder.com/100';
+    if (!path) return 'https://via.placeholder.com/100';
+    if (path.startsWith('http')) return path;
+    // Đã sửa trỏ về link Render
+    return `${API_URL}${path}`;
   };
 
   return (
     <>
       <Header />
       <div className="container" style={{ padding: '50px 20px', minHeight: '80vh' }}>
-        <h2 style={{ fontWeight: '900', marginBottom: '40px', textTransform: 'uppercase', textAlign: 'center' }}>
+        <h2 style={{ fontWeight: '900', marginBottom: '40px', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px' }}>
           🚚 Lịch sử chốt đơn
         </h2>
         
         {loading ? (
           <div style={{ textAlign: 'center', padding: '50px' }}>
-             <p>Đang lục lại kho đơn hàng của bác...</p>
+             <p style={{ fontWeight: 'bold' }}>Đang lục lại kho đơn hàng của bác...</p>
           </div>
         ) : orders.length > 0 ? (
           <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gap: '25px' }}>
             {orders.map(order => (
               <div key={order._id} style={{ border: '1px solid #eee', padding: '25px', borderRadius: '15px', background: '#fff', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #f5f5f5', paddingBottom: '15px', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span>Mã đơn: <b style={{ color: '#111' }}>#{order._id.slice(-8).toUpperCase()}</b></span>
+                  <span style={{ fontSize: '14px' }}>Mã đơn: <b style={{ color: '#111' }}>#{order._id.slice(-8).toUpperCase()}</b></span>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ 
                       color: getStatusColor(order.status), 
