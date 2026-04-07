@@ -1,11 +1,14 @@
-// client/src/pages/public/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
-// --- PHẢI CÓ CÁC BIẾN NÀY Ở NGOÀI HÀM HOME ---
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const bannerSlides = [
   { id: 1, image: 'https://4kwallpapers.com/images/wallpapers/adidas-golden-logo-3840x2160-17549.jpg', title: 'Bước chạy\nđột phá', btnText: 'Mua ngay' },
   { id: 2, image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=2000', title: 'Đẳng cấp\nSneaker', btnText: 'Khám phá bộ sưu tập' },
@@ -35,8 +38,8 @@ const Home = () => {
   useEffect(() => {
     const fetchNewArrivals = async () => {
       try {
-        // Fix Cache: Luôn lấy dữ liệu mới nhất
-        const res = await axios.get(`http://localhost:3000/api/products?t=${new Date().getTime()}`);
+        // Đã thay localhost bằng ${API_URL}
+        const res = await axios.get(`${API_URL}/api/products?t=${new Date().getTime()}`);
         const filtered = res.data.filter(p => 
           p.isNewArrival === true || p.isNewArrival === 'true'
         );
@@ -65,7 +68,8 @@ const Home = () => {
     const images = product.images || product.image;
     if (images && (Array.isArray(images) ? images.length > 0 : true)) {
         const img = Array.isArray(images) ? images[0] : images;
-        return img.startsWith('http') ? img : `http://localhost:3000${img}`;
+        // Đã thay localhost bằng ${API_URL} để hiển thị ảnh từ server
+        return img.startsWith('http') ? img : `${API_URL}${img}`;
     }
     return 'https://via.placeholder.com/300';
   };
@@ -76,7 +80,7 @@ const Home = () => {
 
       {/* HERO SLIDER */}
       <section className="hero-slider">
-        <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * 33.3333}%)` }}>
+        <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * (100 / bannerSlides.length)}%)` }}>
           {bannerSlides.map((slide) => (
             <div className="slide" key={slide.id}>
               <img src={slide.image} alt={slide.title} className="slide-img" />
