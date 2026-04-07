@@ -4,6 +4,11 @@ import axios from 'axios';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const BrandPage = () => {
   const { brandName } = useParams(); 
   const [products, setProducts] = useState([]);
@@ -13,8 +18,8 @@ const BrandPage = () => {
     const fetchBrandProducts = async () => {
       try {
         setLoading(true);
-        // FIX: Đã thêm ?t=... để ép lấy dữ liệu kho mới nhất, không dùng đồ cũ (cache)
-        const res = await axios.get(`http://localhost:3000/api/products?t=${new Date().getTime()}`);
+        // Đã thay localhost bằng ${API_URL}
+        const res = await axios.get(`${API_URL}/api/products?t=${new Date().getTime()}`);
         
         const filtered = res.data.filter(p => {
           const brandValue = p.brand || p.category;
@@ -39,7 +44,8 @@ const BrandPage = () => {
     let imagePath = Array.isArray(imagesData) ? imagesData[0] : imagesData;
     if (typeof imagePath === 'string' && imagePath.length > 0) {
       if (imagePath.startsWith('http')) return imagePath;
-      return `http://localhost:3000${imagePath}`;
+      // Đã thay localhost bằng ${API_URL} để lấy ảnh từ server hosting
+      return `${API_URL}${imagePath}`;
     }
     return 'https://via.placeholder.com/300';
   };
@@ -57,7 +63,7 @@ const BrandPage = () => {
   if (loading) return (
     <>
       <Header />
-      <div style={{textAlign:'center', padding:'100px'}}>Đang tải dữ liệu...</div>
+      <div style={{textAlign:'center', padding:'100px', fontWeight: 'bold'}}>Đang tải bộ sưu tập {brandName}...</div>
     </>
   );
 
@@ -121,29 +127,26 @@ const BrandPage = () => {
   );
 };
 
-// --- COMPONENT CON: LÀM MỜ VÀ ĐỔI TRẠNG THÁI Ở ĐÂY ---
+// --- COMPONENT CON: PRODUCT ITEM ---
 const ProductItem = ({ shoe, getImageUrl }) => {
-  // KIỂM TRA SỐ LƯỢNG KHO (Ép kiểu để tránh lỗi)
   const isOutOfStock = Number(shoe.countInStock) <= 0;
 
   return (
     <div 
       className="product-card hover-lift" 
       style={{ 
-        // LÀM MỜ TOÀN BỘ THẺ NẾU HẾT HÀNG
         opacity: isOutOfStock ? 0.5 : 1, 
         filter: isOutOfStock ? 'grayscale(100%)' : 'none',
         position: 'relative',
         transition: 'all 0.3s ease'
       }}
     >
-      {/* NẾU HẾT HÀNG THÌ VÔ HIỆU HÓA LINK CLICK */}
       <Link 
         to={isOutOfStock ? "#" : `/product/${shoe._id}`} 
         style={{ 
           textDecoration: 'none', 
           color: 'inherit',
-          cursor: isOutOfStock ? 'not-allowed' : 'pointer', // Đổi con trỏ chuột
+          cursor: isOutOfStock ? 'not-allowed' : 'pointer',
           display: 'block'
         }}
       >
@@ -152,7 +155,6 @@ const ProductItem = ({ shoe, getImageUrl }) => {
             <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#ff5722', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', zIndex: 2 }}>NEW</span>
           )}
           
-          {/* CÁI BẢNG "HẾT HÀNG" ĐÈ LÊN TRÊN ẢNH */}
           {isOutOfStock && (
              <div style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -176,7 +178,6 @@ const ProductItem = ({ shoe, getImageUrl }) => {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
             <p className="product-card-price" style={{ margin: 0 }}>{shoe.price?.toLocaleString()} đ</p>
-            {/* THÊM HIỂN THỊ SỐ LƯỢNG KHO */}
             <span style={{ fontSize: '12px', fontWeight: 'bold', color: isOutOfStock ? 'red' : '#4caf50' }}>
               {isOutOfStock ? 'Trống kho' : `Còn: ${shoe.countInStock}`}
             </span>
