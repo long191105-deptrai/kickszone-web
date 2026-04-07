@@ -9,10 +9,16 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Tự động nhận diện môi trường: Nếu chạy máy nhà thì lấy localhost, lên mạng thì lấy link Render
+  const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+      // Đã thay link cứng thành biến API_URL
+      const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       
       const userData = res.data.user ? res.data.user : res.data;
 
@@ -22,8 +28,7 @@ const Login = () => {
       
       toast.success(`Chào mừng bác ${userData.name} đã trở lại! 🔥`, { autoClose: 1500 });
 
-      // --- FIX CHỐT: Bỏ check Admin, ép tất cả mọi người bay thẳng ra Trang Chủ ---
-      // Dùng window.location.href để web tải lại từ đầu, giúp Header nhận diện quyền Admin ngay lập tức
+      // Load lại trang chủ để Header cập nhật quyền Admin/User ngay lập tức
       setTimeout(() => {
         window.location.href = '/';
       }, 1500);
