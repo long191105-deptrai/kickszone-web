@@ -6,6 +6,11 @@ import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext'; 
 import { toast } from 'react-toastify';
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
@@ -20,11 +25,14 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/api/products/${id}?t=${new Date().getTime()}`);
+        // Đã thay localhost bằng ${API_URL}
+        const res = await axios.get(`${API_URL}/api/products/${id}?t=${new Date().getTime()}`);
         setProduct(res.data);
         
         if (res.data.images && res.data.images.length > 0) {
           setMainImage(res.data.images[0]);
+        } else if (res.data.image) {
+          setMainImage(res.data.image);
         }
         
         setLoading(false);
@@ -41,7 +49,8 @@ const ProductDetail = () => {
     if (!imgData) return 'https://via.placeholder.com/600';
     const path = Array.isArray(imgData) ? imgData[0] : imgData;
     if (typeof path === 'string' && path.length > 0) {
-      return path.startsWith('http') ? path : `http://localhost:3000${path}`;
+      // Đã sửa trỏ về link Render
+      return path.startsWith('http') ? path : `${API_URL}${path}`;
     }
     return 'https://via.placeholder.com/600';
   };
@@ -52,7 +61,7 @@ const ProductDetail = () => {
       return;
     }
 
-    const isAccessories = product.brand === 'Accessories';
+    const isAccessories = product.brand === 'Accessories' || product.category === 'Accessories';
     if (!isAccessories && !selectedSize) {
       toast.warning("Bác ơi, chọn Size giày đã rồi mới cho vào giỏ được chứ! 😊", { theme: "colored" });
       return;
@@ -70,12 +79,21 @@ const ProductDetail = () => {
     toast.success(`👟 Đã thêm ${quantity} món vào giỏ hàng!`, { position: "top-right", autoClose: 2000, theme: "dark" });
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '100px' }}>Đang tìm siêu phẩm trong kho...</div>;
-  if (!product) return <div style={{ textAlign: 'center', padding: '100px' }}>Không tìm thấy sản phẩm!</div>;
+  if (loading) return (
+    <>
+      <Header />
+      <div style={{ textAlign: 'center', padding: '100px', fontWeight: 'bold' }}>Đang tìm siêu phẩm trong kho...</div>
+    </>
+  );
 
-  const isAccessories = product.brand === 'Accessories';
-  
-  // --- FIX CHỐT: Ép kiểu Số để chắc chắn nó bắt được kho = 0 ---
+  if (!product) return (
+    <>
+      <Header />
+      <div style={{ textAlign: 'center', padding: '100px' }}>Không tìm thấy sản phẩm!</div>
+    </>
+  );
+
+  const isAccessories = product.brand === 'Accessories' || product.category === 'Accessories';
   const isOutOfStock = Number(product.countInStock) <= 0;
 
   return (
@@ -85,8 +103,6 @@ const ProductDetail = () => {
         
         {/* CỘT TRÁI: KHU VỰC ẢNH */}
         <div style={{ flex: '1.2', minWidth: '350px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Bọc ảnh trong thẻ div relative để gắn nhãn Hết hàng lên trên */}
           <div style={{ position: 'relative' }}>
             <img 
               src={formatImageUrl(mainImage)} 
@@ -94,12 +110,10 @@ const ProductDetail = () => {
               style={{ 
                 width: '100%', borderRadius: '20px', boxShadow: '0 15px 40px rgba(0,0,0,0.1)', 
                 objectFit: 'cover', 
-                // Mờ hẳn 60% và xám xịt luôn
                 opacity: isOutOfStock ? 0.4 : 1, 
                 filter: isOutOfStock ? 'grayscale(100%)' : 'none' 
               }} 
             />
-            {/* Cảnh báo to bự chảng đè lên ảnh nếu hết hàng */}
             {isOutOfStock && (
               <div style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -134,19 +148,19 @@ const ProductDetail = () => {
 
         {/* CỘT PHẢI: THÔNG TIN SẢN PHẨM */}
         <div style={{ flex: '1', minWidth: '350px' }}>
-          <p style={{ color: isOutOfStock ? '#888' : (isAccessories ? '#4caf50' : '#ff5722'), fontWeight: '800', textTransform: 'uppercase' }}>
+          <p style={{ color: isOutOfStock ? '#888' : (isAccessories ? '#4caf50' : '#ff5722'), fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
             {isOutOfStock ? "SẢN PHẨM TẠM NGƯNG BÁN" : (isAccessories ? "PHỤ KIỆN TẠI KICKSZONE" : product.brand)}
           </p>
-          <h1 style={{ fontSize: '42px', margin: '0 0 15px 0', fontWeight: '900', color: isOutOfStock ? '#666' : '#111', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
+          <h1 style={{ fontSize: '42px', margin: '0 0 15px 0', fontWeight: '900', color: isOutOfStock ? '#666' : '#111', textDecoration: isOutOfStock ? 'line-through' : 'none', lineHeight: '1.2' }}>
             {product.name}
           </h1>
-          <h2 style={{ color: isOutOfStock ? '#999' : '#111', fontSize: '30px', fontWeight: '700' }}>
+          <h2 style={{ color: isOutOfStock ? '#999' : '#111', fontSize: '30px', fontWeight: '700', marginBottom: '25px' }}>
             {product.price?.toLocaleString()} VNĐ
           </h2>
           
           <div style={{ borderTop: '1px solid #eee', paddingTop: '20px', marginBottom: '30px' }}>
-            <h4 style={{ marginBottom: '10px' }}>MÔ TẢ SẢN PHẨM:</h4>
-            <p style={{ color: '#555', lineHeight: '1.7' }}>{product.description}</p>
+            <h4 style={{ marginBottom: '10px', fontWeight: '800' }}>MÔ TẢ SẢN PHẨM:</h4>
+            <p style={{ color: '#555', lineHeight: '1.7', fontSize: '15px' }}>{product.description}</p>
           </div>
 
           {/* CHỌN SIZE */}
@@ -164,7 +178,8 @@ const ProductDetail = () => {
                       border: selectedSize === size ? '2px solid #111' : '1px solid #ddd',
                       background: selectedSize === size ? '#111' : '#fff',
                       color: selectedSize === size ? '#fff' : '#111',
-                      cursor: isOutOfStock ? 'not-allowed' : 'pointer', fontWeight: '700'
+                      cursor: isOutOfStock ? 'not-allowed' : 'pointer', fontWeight: '700',
+                      transition: '0.2s'
                     }}
                   >
                     {size}
@@ -178,16 +193,16 @@ const ProductDetail = () => {
           <div style={{ marginBottom: '35px', opacity: isOutOfStock ? 0.3 : 1, pointerEvents: isOutOfStock ? 'none' : 'auto' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
                 <p style={{ fontWeight: '800' }}>SỐ LƯỢNG:</p>
-                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #eee', borderRadius: '8px' }}>
-                    <button disabled={isOutOfStock} onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} style={{ padding: '10px 18px', border: 'none', background: '#f9f9f9', cursor: 'pointer' }}>-</button>
+                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #eee', borderRadius: '8px', overflow: 'hidden' }}>
+                    <button disabled={isOutOfStock} onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} style={{ padding: '12px 18px', border: 'none', background: '#f9f9f9', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
                     <span style={{ padding: '0 20px', fontWeight: '800' }}>{quantity}</span>
                     <button disabled={isOutOfStock} onClick={() => {
                         if (quantity < product.countInStock) setQuantity(quantity + 1);
-                        else toast.info(`Kho chỉ còn ${product.countInStock} đôi.`);
-                    }} style={{ padding: '10px 18px', border: 'none', background: '#f9f9f9', cursor: 'pointer' }}>+</button>
+                        else toast.info(`Kho chỉ còn ${product.countInStock} món.`);
+                    }} style={{ padding: '12px 18px', border: 'none', background: '#f9f9f9', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
                 </div>
               </div>
-              <p style={{ marginTop: '10px', fontSize: '15px', color: isOutOfStock ? '#ff0000' : '#2e7d32', fontWeight: 'bold' }}>
+              <p style={{ marginTop: '12px', fontSize: '14px', color: isOutOfStock ? '#ff0000' : '#2e7d32', fontWeight: 'bold' }}>
                 {isOutOfStock ? '⚠️ Khách mua hết sạch rồi bác ơi!' : `✓ Sẵn có ${product.countInStock} sản phẩm`}
               </p>
           </div>
@@ -203,7 +218,9 @@ const ProductDetail = () => {
               padding: '22px', border: 'none', borderRadius: '12px',
               fontSize: '18px', fontWeight: '900',
               cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-              opacity: isOutOfStock ? 0.7 : 1
+              opacity: isOutOfStock ? 0.7 : 1,
+              transition: '0.3s',
+              boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
             }}
           >
             {isOutOfStock ? 'KHÔNG THỂ THÊM VÀO GIỎ' : 'THÊM VÀO GIỎ HÀNG'}
