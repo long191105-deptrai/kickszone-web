@@ -22,8 +22,8 @@ app.use('/api/users', require('./routes/user'));
 // Cấu hình hosting
 app.use(express.static(path.resolve(__dirname, '../client/build')));
 
-// SỬA TẠI ĐÂY: Dùng (.*) thay cho * để tương thích Express 5
-app.get('(.*)', (req, res) => {
+// SỬA TẠI ĐÂY: Dùng Regex để tránh lỗi PathError trên Express 5
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
 });
 
