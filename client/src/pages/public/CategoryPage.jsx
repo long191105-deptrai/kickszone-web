@@ -4,6 +4,11 @@ import axios from 'axios';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const CategoryPage = () => {
   const { type } = useParams(); // Lấy giá trị 'nam', 'nữ' hoặc 'Accessories'
   const [products, setProducts] = useState([]);
@@ -13,54 +18,58 @@ const CategoryPage = () => {
     const fetchCategoryProducts = async () => {
       try {
         setLoading(true);
-        // FIX 1: Chống Cache để lấy dữ liệu kho realtime nhất
-        const res = await axios.get(`http://localhost:3000/api/products?t=${new Date().getTime()}`);
+        // Đã thay localhost bằng ${API_URL} và thêm timestamp chống cache
+        const res = await axios.get(`${API_URL}/api/products?t=${new Date().getTime()}`);
         
         let filtered = [];
         if (type === 'Accessories') {
-          filtered = res.data.filter(p => p.brand === 'Accessories');
+          filtered = res.data.filter(p => p.brand === 'Accessories' || p.category === 'Accessories');
         } else {
           // Lọc theo giới tính (Nam/Nữ) và bao gồm Unisex
           filtered = res.data.filter(p => 
-            (p.gender?.toLowerCase() === type.toLowerCase() || p.gender === 'Unisex') 
-            && p.brand !== 'Accessories'
+            (p.gender?.toLowerCase() === type.toLowerCase() || p.gender?.toLowerCase() === 'unisex') 
+            && (p.brand !== 'Accessories' && p.category !== 'Accessories')
           );
         }
         setProducts(filtered);
         setLoading(false);
       } catch (err) {
+        console.error("Lỗi load sản phẩm theo danh mục:", err);
         setLoading(false);
       }
     };
     fetchCategoryProducts();
   }, [type]);
 
-  // Nhóm sản phẩm theo hãng
+  // Nhóm sản phẩm theo hãng để hiển thị đẹp hơn
   const brands = [...new Set(products.map(p => p.brand))];
 
   const getImageUrl = (images) => {
     const path = Array.isArray(images) ? images[0] : images;
-    if (path?.startsWith('http')) return path;
-    return `http://localhost:3000${path}`;
+    if (!path) return 'https://via.placeholder.com/300';
+    if (path.startsWith('http')) return path;
+    // Đã sửa trỏ về link Render
+    return `${API_URL}${path}`;
   };
 
   return (
     <>
       <Header />
       <div className="container" style={{ padding: '50px 0', minHeight: '80vh' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '50px', textTransform: 'uppercase', fontWeight: '900' }}>
-          {type === 'Accessories' ? 'Tất cả Phụ kiện' : `Tất cả Giày ${type}`}
+        <h1 style={{ textAlign: 'center', marginBottom: '50px', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '2px' }}>
+          {type === 'Accessories' ? 'TẤT CẢ PHỤ KIỆN' : `TẤT CẢ GIÀY ${type.toUpperCase()}`}
         </h1>
 
-        {brands.length > 0 ? brands.map(brandName => (
+        {loading ? (
+          <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Đang tìm kiếm siêu phẩm...</p>
+        ) : brands.length > 0 ? brands.map(brandName => (
           <div key={brandName} style={{ marginBottom: '60px' }}>
-            <h2 style={{ borderLeft: '5px solid #111', paddingLeft: '15px', marginBottom: '30px' }}>
+            <h2 style={{ borderLeft: '5px solid #111', paddingLeft: '15px', marginBottom: '30px', textTransform: 'uppercase', fontWeight: '800' }}>
               {brandName.toUpperCase()}
             </h2>
             <div className="product-grid">
               {products.filter(p => p.brand === brandName).map(shoe => {
                 
-                // FIX 2: KIỂM TRA SỐ LƯỢNG KHO (Ép kiểu để tránh lỗi chuỗi)
                 const isOutOfStock = Number(shoe.countInStock) <= 0;
 
                 return (
@@ -71,15 +80,13 @@ const CategoryPage = () => {
                     style={{ 
                       textDecoration: 'none', 
                       color: 'inherit',
-                      // FIX 3: LÀM MỜ VÀ ĐỔI MÀU NẾU HẾT HÀNG
                       opacity: isOutOfStock ? 0.5 : 1,
                       filter: isOutOfStock ? 'grayscale(100%)' : 'none',
-                      pointerEvents: isOutOfStock ? 'none' : 'auto', // Khóa click
+                      pointerEvents: isOutOfStock ? 'none' : 'auto',
                       position: 'relative',
                       display: 'block'
                     }}
                   >
-                    {/* BẢNG CHỮ ĐÈ LÊN ẢNH KHI HẾT HÀNG */}
                     {isOutOfStock && (
                       <div style={{
                           position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -94,15 +101,14 @@ const CategoryPage = () => {
                     <img src={getImageUrl(shoe.images || shoe.image)} alt={shoe.name} className="product-card-image" />
                     
                     <div className="product-card-info">
-                      <h3 className="product-card-name" style={{ color: isOutOfStock ? '#666' : '#111' }}>
+                      <h3 className="product-card-name" style={{ color: isOutOfStock ? '#666' : '#111', fontWeight: '700' }}>
                         {shoe.name}
                       </h3>
                       
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
-                        <p className="product-card-price" style={{ margin: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                        <p className="product-card-price" style={{ margin: 0, color: '#ff5722', fontWeight: 'bold' }}>
                           {shoe.price?.toLocaleString()}đ
                         </p>
-                        {/* Hiện thông báo số lượng */}
                         <span style={{ fontSize: '12px', fontWeight: 'bold', color: isOutOfStock ? 'red' : '#4caf50' }}>
                           {isOutOfStock ? 'Trống kho' : `Còn: ${shoe.countInStock}`}
                         </span>
@@ -113,7 +119,12 @@ const CategoryPage = () => {
               })}
             </div>
           </div>
-        )) : <p style={{textAlign:'center'}}>Đang cập nhật sản phẩm...</p>}
+        )) : (
+          <div style={{ textAlign: 'center', padding: '50px' }}>
+            <p style={{ color: '#888' }}>Danh mục này đang chờ cập nhật sản phẩm bác ơi!</p>
+            <Link to="/" style={{ color: '#111', fontWeight: 'bold' }}>Quay lại trang chủ</Link>
+          </div>
+        )}
       </div>
       <Footer />
     </>
