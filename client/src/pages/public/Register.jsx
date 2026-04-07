@@ -1,13 +1,17 @@
-// client/src/pages/public/Register.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
-import { toast } from 'react-toastify'; // Dùng toast cho đẹp và đồng bộ
+import { toast } from 'react-toastify';
 
 const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const navigate = useNavigate();
+
+  // Tự động nhận diện môi trường để lấy link API chuẩn
+  const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -16,27 +20,24 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // 1. Kiểm tra độ dài mật khẩu ngay trên trình duyệt
     if (formData.password.length < 6) {
       toast.warning('⚠️ Mật khẩu phải có ít nhất 6 ký tự bác nhé!');
       return;
     }
 
     try {
-      // 2. Gửi dữ liệu lên Backend
-      const res = await axios.post('http://localhost:3000/api/auth/register', formData);
+      // Đã đổi sang biến API_URL động
+      const res = await axios.post(`${API_URL}/api/auth/register`, formData);
       
       toast.success(res.data.message || '🎉 Đăng ký thành công! Đang chuyển sang đăng nhập...');
       
-      // Đợi 1.5s cho khách đọc thông báo rồi mới chuyển trang
       setTimeout(() => {
         navigate('/login'); 
       }, 1500);
 
     } catch (err) {
       console.error("Lỗi đăng ký chi tiết:", err.response || err);
-      // 3. Bắt chính xác câu lỗi từ Backend gửi lên
-      const errorMessage = err.response?.data?.message || 'Lỗi Server cục bộ! Bác check lại Backend nhé.';
+      const errorMessage = err.response?.data?.message || 'Lỗi kết nối Server! Bác check lại mạng nhé.';
       toast.error(`❌ ${errorMessage}`);
     }
   };
@@ -46,10 +47,12 @@ const Register = () => {
       <Header />
       <div className="auth-container">
         <div className="auth-box">
-          <h2 className="auth-title">Đăng ký tài khoản</h2>
-          <form onSubmit={handleRegister}>
+          <h2 className="auth-title" style={{ textAlign: 'center', fontWeight: '900', textTransform: 'uppercase', marginBottom: '20px' }}>
+             ĐĂNG KÝ TÀI KHOẢN
+          </h2>
+          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div className="auth-form-group">
-              <label>Họ và tên</label>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Họ và tên</label>
               <input 
                 type="text" 
                 name="name" 
@@ -57,10 +60,11 @@ const Register = () => {
                 placeholder="Nhập họ tên" 
                 onChange={handleChange} 
                 value={formData.name}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}
               />
             </div>
             <div className="auth-form-group">
-              <label>Email</label>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Email</label>
               <input 
                 type="email" 
                 name="email" 
@@ -68,10 +72,11 @@ const Register = () => {
                 placeholder="Nhập email" 
                 onChange={handleChange} 
                 value={formData.email}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}
               />
             </div>
             <div className="auth-form-group">
-              <label>Mật khẩu</label>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Mật khẩu</label>
               <input 
                 type="password" 
                 name="password" 
@@ -79,12 +84,15 @@ const Register = () => {
                 placeholder="Tạo mật khẩu (Ít nhất 6 ký tự)" 
                 onChange={handleChange} 
                 value={formData.password}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}
               />
             </div>
-            <button type="submit" className="auth-btn">TẠO TÀI KHOẢN</button>
+            <button type="submit" className="auth-btn" style={{ background: '#111', color: '#fff', padding: '15px', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>
+                TẠO TÀI KHOẢN
+            </button>
           </form>
-          <div className="auth-switch">
-            Đã có tài khoản? <Link to="/login">Đăng nhập tại đây</Link>
+          <div className="auth-switch" style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}>
+            Đã có tài khoản? <Link to="/login" style={{ color: '#ff5722', fontWeight: 'bold', textDecoration: 'none' }}>Đăng nhập tại đây</Link>
           </div>
         </div>
       </div>
