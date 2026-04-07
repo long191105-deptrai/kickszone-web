@@ -4,6 +4,11 @@ import { useCart } from '../../context/CartContext';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const Cart = () => {
   const { cartItems, removeFromCart, addToCart, clearCart } = useCart();
   const navigate = useNavigate();
@@ -11,7 +16,7 @@ const Cart = () => {
   // Tính tổng tiền
   const totalPrice = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
-  // --- HÀM XỬ LÝ ẢNH TRONG GIỎ HÀNG (FIX LỖI STARTSWITH) ---
+  // --- HÀM XỬ LÝ ẢNH TRONG GIỎ HÀNG (ĐÃ FIX LINK RENDER) ---
   const getCartImage = (imagesData) => {
     if (!imagesData) return 'https://via.placeholder.com/100';
     
@@ -19,7 +24,8 @@ const Cart = () => {
     const path = Array.isArray(imagesData) ? imagesData[0] : imagesData;
 
     if (typeof path === 'string' && path.length > 0) {
-      return path.startsWith('http') ? path : `http://localhost:3000${path}`;
+      // Nếu là link ảnh mạng (http) thì dùng luôn, nếu là ảnh upload thì nối với API_URL
+      return path.startsWith('http') ? path : `${API_URL}${path}`;
     }
     return 'https://via.placeholder.com/100';
   };
@@ -56,9 +62,9 @@ const Cart = () => {
             <div style={{ flex: '2', minWidth: '400px' }}>
               {cartItems.map((item) => (
                 <div key={item._id + item.size} style={{ display: 'flex', gap: '20px', padding: '20px', borderBottom: '1px solid #eee', alignItems: 'center', background: '#fff', marginBottom: '10px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                  {/* SỬA LẠI ĐOẠN HIỂN THỊ ẢNH Ở ĐÂY */}
+                  
                   <img 
-                    src={getCartImage(item.images)} 
+                    src={getCartImage(item.images || item.image)} 
                     alt={item.name} 
                     style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '10px' }} 
                   />
@@ -70,9 +76,9 @@ const Cart = () => {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '5px' }}>
-                    <button onClick={() => handleDecrease(item)} style={{ padding: '5px 12px', border: 'none', background: 'none', cursor: 'pointer' }}>-</button>
+                    <button onClick={() => handleDecrease(item)} style={{ padding: '5px 12px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
                     <span style={{ padding: '0 10px', fontWeight: 'bold' }}>{item.qty}</span>
-                    <button onClick={() => handleIncrease(item)} style={{ padding: '5px 12px', border: 'none', background: 'none', cursor: 'pointer' }}>+</button>
+                    <button onClick={() => handleIncrease(item)} style={{ padding: '5px 12px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
                   </div>
 
                   <button 
@@ -84,17 +90,17 @@ const Cart = () => {
                 </div>
               ))}
               
-              <button onClick={clearCart} style={{ marginTop: '20px', background: 'none', border: '1px solid #ccc', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer', color: '#666' }}>
+              <button onClick={clearCart} style={{ marginTop: '20px', background: 'none', border: '1px solid #ccc', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer', color: '#666', fontWeight: '500' }}>
                 Xóa sạch giỏ hàng
               </button>
             </div>
 
             {/* PHẦN TỔNG TIỀN & THANH TOÁN */}
             <div style={{ flex: '1', minWidth: '300px', background: '#f9f9f9', padding: '30px', borderRadius: '15px', height: 'fit-content' }}>
-              <h3 style={{ marginBottom: '20px', borderBottom: '2px solid #111', paddingBottom: '10px' }}>TỔNG ĐƠN HÀNG</h3>
+              <h3 style={{ marginBottom: '20px', borderBottom: '2px solid #111', paddingBottom: '10px', fontWeight: '900' }}>TỔNG ĐƠN HÀNG</h3>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <span>Tạm tính:</span>
-                <span>{totalPrice.toLocaleString()}đ</span>
+                <span style={{ fontWeight: '500' }}>{totalPrice.toLocaleString()}đ</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <span>Phí vận chuyển:</span>
@@ -118,7 +124,8 @@ const Cart = () => {
                   fontWeight: 'bold',
                   marginTop: '30px',
                   cursor: 'pointer',
-                  transition: '0.3s'
+                  transition: '0.3s',
+                  boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
                 }}
               >
                 TIẾN HÀNH THANH TOÁN
