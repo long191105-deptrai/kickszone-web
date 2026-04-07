@@ -1,8 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css'; 
 
-// --- IMPORT THƯ VIỆN THÔNG BÁO MỚI ---
+// --- IMPORT THƯ VIỆN THÔNG BÁO ---
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -16,9 +16,8 @@ import Register from './pages/public/Register';
 import BrandPage from './pages/public/BrandPage';
 import Checkout from './pages/public/Checkout';
 import Policy from './pages/public/Policy';
-import MyOrders from './pages/public/MyOrders'; // Nhớ import vào nhé bác
+import MyOrders from './pages/public/MyOrders'; 
 import Profile from './pages/public/Profile';
-// --- THÊM IMPORT TRANG DANH MỤC MỚI ---
 import CategoryPage from './pages/public/CategoryPage'; 
 
 // 2. Import dành cho Admin
@@ -28,6 +27,13 @@ import ManageProducts from './pages/admin/ManageProducts';
 import ManageOrders from './pages/admin/ManageOrders';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManageSettings from './pages/admin/ManageSettings';
+
+// --- HÀM KIỂM TRA QUYỀN ADMIN (BẢO VỆ ROUTE) ---
+const AdminRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  // Nếu là admin thì cho vào, không thì đá về trang chủ
+  return user && user.role === 'admin' ? children : <Navigate to="/" />;
+};
 
 function App() {
   return (
@@ -45,8 +51,6 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/profile" element={<Profile />} />
-            
-            {/* --- ROUTE DANH MỤC MỚI (NAM/NỮ/PHỤ KIỆN) --- */}
             <Route path="/category/:type" element={<CategoryPage />} />
 
             {/* --- ROUTES CHÍNH SÁCH --- */}
@@ -83,27 +87,28 @@ function App() {
               } />
             } />
 
-            {/* --- ROUTES ADMIN --- */}
-            <Route path="/admin" element={<AdminLayout />}>
+            {/* --- ROUTES ADMIN (ĐÃ ĐƯỢC BẢO VỆ) --- */}
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }>
               <Route index element={<Dashboard />} /> 
               <Route path="users" element={<ManageUsers />} />
               <Route path="products" element={<ManageProducts />} />
               <Route path="orders" element={<ManageOrders />} />
               <Route path="settings" element={<ManageSettings />} />
             </Route>
+
+            {/* --- ROUTE 404: NẾU GÕ SAI LINK THÌ VỀ HOME --- */}
+            <Route path="*" element={<Navigate to="/" />} />
+
           </Routes>
 
-          {/* --- CẤU HÌNH BOX THÔNG BÁO GÓC PHẢI --- */}
+          {/* --- BOX THÔNG BÁO --- */}
           <ToastContainer 
             position="top-right" 
             autoClose={3000} 
-            hideProgressBar={false} 
-            newestOnTop={true}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
             theme="dark" 
           />
         </div>
