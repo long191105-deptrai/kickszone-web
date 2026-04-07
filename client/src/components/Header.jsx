@@ -6,6 +6,11 @@ import { useCart } from '../context/CartContext';
 // Import logo
 import logoKicksZone from '../assets/images/logo.png'; 
 
+// Tự động nhận diện môi trường để lấy link API chuẩn
+const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:3000" 
+    : "https://kickszone-web.onrender.com";
+
 const Header = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
@@ -20,13 +25,13 @@ const Header = () => {
   const totalItems = cartItems.reduce((acc, item) => acc + item.qty, 0);
   const brands = ["Nike", "Adidas", "Puma", "Jordan", "Vans", "Converse"];
 
-  // --- Biến kiểm tra Admin ---
   const isAdmin = user && user.role === 'admin';
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/products');
+        // Đã thay localhost bằng ${API_URL}
+        const res = await axios.get(`${API_URL}/api/products`);
         setAllProducts(res.data);
       } catch (err) {
         console.error("Lỗi lấy dữ liệu tìm kiếm");
@@ -50,15 +55,18 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    alert('Đã đăng xuất!');
+    toast.info('Hẹn gặp lại bác tại KicksZone! 👋');
     navigate('/');
+    // Ép tải lại trang để xóa sạch trạng thái cũ
     window.location.reload(); 
   };
 
   const getImgSearch = (images) => {
     const path = Array.isArray(images) ? images[0] : images;
-    if (path?.startsWith('http')) return path;
-    return `http://localhost:3000${path}`;
+    if (!path) return 'https://via.placeholder.com/40';
+    if (path.startsWith('http')) return path;
+    // Đã sửa trỏ về link Render
+    return `${API_URL}${path}`;
   };
 
   const dropdownLinkStyle = {
@@ -76,7 +84,7 @@ const Header = () => {
       
       {/* LOGO */}
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
-        <img src={logoKicksZone} alt="KicksZone Logo" style={{ height: '70px', width: 'auto', objectFit: 'contain' }} />
+        <img src={logoKicksZone} alt="KicksZone Logo" style={{ height: '60px', width: 'auto', objectFit: 'contain' }} />
         <span style={{ fontSize: '20px', fontWeight: '900', color: '#111', textTransform: 'uppercase', letterSpacing: '1px' }}>
           KICKS<span style={{ color: '#ff5722' }}>ZONE</span>
         </span>
@@ -92,14 +100,14 @@ const Header = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span style={{ color: '#888' }}>🔍</span>
+          <span style={{ color: '#888', cursor: 'pointer' }}>🔍</span>
         </div>
 
         {filteredResults.length > 0 && (
           <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderRadius: '10px', overflow: 'hidden', zIndex: 1000 }}>
             {filteredResults.map(p => (
               <Link to={`/product/${p._id}`} key={p._id} onClick={() => setSearchTerm('')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', textDecoration: 'none', color: '#111', borderBottom: '1px solid #f1f1f1' }}>
-                <img src={getImgSearch(p.images)} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '5px' }} />
+                <img src={getImgSearch(p.images || p.image)} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '5px' }} />
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{p.name}</div>
                   <div style={{ fontSize: '11px', color: '#ff5722' }}>{p.price?.toLocaleString()}đ</div>
@@ -133,28 +141,6 @@ const Header = () => {
               Giỏ hàng <span style={{ color: '#ff5722' }}>({totalItems})</span>
             </Link>
           </li>
-
-          {/* --- NÚT ĐI TỚI TRANG QUẢN TRỊ (CHỈ HIỆN KHI LÀ ADMIN) --- */}
-          {isAdmin && (
-            <li>
-              <Link 
-                to="/admin" 
-                style={{ 
-                  background: '#ff5722', 
-                  color: '#fff', 
-                  padding: '8px 15px', 
-                  borderRadius: '5px', 
-                  fontWeight: '900', 
-                  marginLeft: '10px',
-                  textDecoration: 'none',
-                  fontSize: '13px'
-                }}
-              >
-                ⚙️ TRANG QUẢN TRỊ
-              </Link>
-            </li>
-          )}
-
         </ul>
       </nav>
 
@@ -168,27 +154,26 @@ const Header = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '11px', color: '#888' }}>Xin chào,</div>
+                <div style={{ fontSize: '10px', color: '#888' }}>Xin chào,</div>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111' }}>{user.name.split(' ').pop()} ▼</div>
               </div>
-              <div style={{ width: '35px', height: '35px', background: '#f1f1f1', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', color: '#ff5722', border: '2px solid #ff5722' }}>
+              <div style={{ width: '35px', height: '35px', background: '#111', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', color: '#fff' }}>
                 {user.name.charAt(0).toUpperCase()}
               </div>
             </div>
 
-            {/* DROPDOWN USER */}
             {isUserDropdownOpen && (
               <ul style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', boxShadow: '0 8px 20px rgba(0,0,0,0.15)', padding: '10px', borderRadius: '10px', listStyle: 'none', minWidth: '180px', border: '1px solid #eee' }}>
                 {isAdmin ? (
                   <>
-                    <li style={{ padding: '8px 15px', fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Quản trị viên</li>
+                    <li style={{ padding: '8px 15px', fontSize: '10px', color: '#ff5722', fontWeight: '900', textTransform: 'uppercase' }}>Quản trị viên</li>
                     <li><Link to="/admin" style={dropdownLinkStyle}>📊 Bảng điều khiển</Link></li>
                     <li><Link to="/admin/products" style={dropdownLinkStyle}>👟 Quản lý kho</Link></li>
                     <li><Link to="/admin/orders" style={dropdownLinkStyle}>📦 Quản lý đơn hàng</Link></li>
                   </>
                 ) : (
                   <>
-                    <li style={{ padding: '8px 15px', fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Khách hàng</li>
+                    <li style={{ padding: '8px 15px', fontSize: '10px', color: '#888', textTransform: 'uppercase' }}>Khách hàng</li>
                     <li><Link to="/profile" style={dropdownLinkStyle}>👤 Sửa thông tin</Link></li>
                     <li><Link to="/my-orders" style={dropdownLinkStyle}>🚚 Đơn hàng của tôi</Link></li>
                   </>
